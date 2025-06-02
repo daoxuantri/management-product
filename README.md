@@ -1,6 +1,7 @@
 # management-product
 Quản lý thông tin giá cả các sản phẩm , nhập dữ liệu , các loại giá đã cung cấp cho dự án viết bằng TypeScript
 
+<<<<<<< HEAD
 
 
 
@@ -19,4 +20,7 @@ Done . Now run :
 cd project
 npm i
 npm run dev
+=======
+TypeScript + React + Vite
+>>>>>>> a47845d81d9559b5a6bcd098217a244bcb044f7a
 
