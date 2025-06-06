@@ -1,52 +1,29 @@
-import { Sidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState, toggleSidebar } from '../types';
-import { MdOutlineSpaceDashboard } from 'react-icons/md';
-import { FiBox, FiUser } from 'react-icons/fi';
-import { IoIosArrowDropright, IoIosArrowDropleft } from 'react-icons/io';
-import Link from 'next/link';
+import Link from "next/link";
+import { FaTachometerAlt, FaUsers, FaBox } from "react-icons/fa";
 
-const SidebarComponent = () => {
-  const { collapsed, toggle } = useSelector((state: RootState) => state.sidebar);
-  const dispatch = useDispatch();
-
+export default function Sidebar() {
   return (
-    <Sidebar
-      collapsed={collapsed}
-      breakPoint="lg"
-      toggled={toggle}
-      onBackdropClick={() => dispatch(toggleSidebar())}
-      className="h-screen"
-    >
-      <Menu>
-        <MenuItem
-          className="lg:hidden"
-          onClick={() => dispatch(toggleSidebar())}
-          icon={toggle ? <IoIosArrowDropright className="text-2xl" /> : <IoIosArrowDropleft className="text-2xl" />}
-        >
-          Toggle
-        </MenuItem>
-        <MenuItem
-          icon={<MdOutlineSpaceDashboard className="text-2xl" />}
-          component={<Link href="/" />}
-        >
-          Trang chủ
-        </MenuItem>
-        <MenuItem
-          icon={<FiBox className="text-2xl" />}
-          component={<Link href="/dashboard" />}
-        >
-          Danh mục khác
-        </MenuItem>
-        <MenuItem
-          icon={<FiUser className="text-2xl" />}
-          component={<Link href="/users" />}
-        >
-          Người dùng
-        </MenuItem>
-      </Menu>
-    </Sidebar>
+    <div className="w-64 bg-gray-800 text-white h-screen p-4">
+      <h2 className="text-2xl font-bold mb-6">Quản lý danh mục hàng hóa</h2>
+      <nav>
+        <ul className="space-y-2">
+          <li>
+            <Link href="/" className="flex items-center p-2 hover:bg-gray-700 rounded">
+              <FaTachometerAlt className="mr-2" /> Thông tin chung
+            </Link>
+          </li>
+          <li>
+            <Link href="/general" className="flex items-center p-2 hover:bg-gray-700 rounded">
+              <FaUsers className="mr-2" /> Các mục khác
+            </Link>
+          </li>
+          <li>
+            <Link href="/other" className="flex items-center p-2 hover:bg-gray-700 rounded">
+              <FaBox className="mr-2" /> (Đề xuất các chỉnh sửa khác)
+            </Link>
+          </li>
+        </ul>
+      </nav>
+    </div>
   );
-};
-
-export default SidebarComponent;
+}
