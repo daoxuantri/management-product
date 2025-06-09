@@ -21,24 +21,26 @@ app.use(
 
 
 
-// mongoose.connect(dbConfig.db).then(
-//     () => {
-//         console.log("Database Connected");
-//     }, (error) => {
-//         console.log("Database can't be connected" + error);
-//     }
-// )
-
-mongoose.connect(process.env.MONGO)
-    .then(() => {
+mongoose.connect(dbConfig.db).then(
+    () => {
         console.log("Database Connected");
-    })
-    .catch((error) => {
-        console.error("Database can't be connected: " + error);
-    });
+    }, (error) => {
+        console.log("Database can't be connected" + error);
+    }
+)
+
+// mongoose.connect(process.env.MONGO)
+//     .then(() => {
+//         console.log("Database Connected");
+//     })
+//     .catch((error) => {
+//         console.error("Database can't be connected: " + error);
+//     });
 
 app.use(express.json());
-app.use("/users", require("./routes/users.routes"));
+// app.use("/users", require("./routes/users.routes"));
+app.use("/products", require("./routes/products.routes"));
+app.use("/projects", require("./routes/projects.routes"));
 
 
 app.use((err, req, res, next) => {
