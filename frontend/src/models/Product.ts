@@ -9,7 +9,9 @@ export interface Product {
   yrs_manu: string;
   price: number;
   unit: string;
+  priceDate: string;
   supplier: string;
+  asker : string, 
   note: string;
   createdAt: string;
   updatedAt: string;

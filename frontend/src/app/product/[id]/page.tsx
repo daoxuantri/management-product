@@ -1,408 +1,385 @@
-// app/product/[id]/page.tsx
 'use client';
-
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { notFound } from "next/navigation";
-import { FaEdit, FaSave, FaTimes, FaTrash, FaEye, FaArrowLeft } from "react-icons/fa"; // Added FaArrowLeft
-import { format, isValid, parse } from "date-fns";
+import Loading from '@/components/Loading';
+import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import { FaEdit, FaSave, FaTimes, FaTrash, FaEye, FaArrowLeft } from 'react-icons/fa';
+import { format, isValid, parse } from 'date-fns';
+import { fetchProductById } from '@/api/productApi';
+import { Product } from '@/models/Product';
 
 interface Props {
   params: { id: string };
-}
-
-interface Product {
-  id: number;
-  code: string;
-  name?: string;
-  specificProduct?: string;
-  unit?: string;
-  price?: number;
-  priceDate?: string;
-  origin?: string;
-  brand?: string;
-  supplier: string;
-  asker: string;
-  note?: string;
 }
 
 export default function ProductDetail({ params }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [tempPriceDate, setTempPriceDate] = useState("");
+  const [tempPriceDate, setTempPriceDate] = useState(''); // Không cần nữa, có thể xóa nếu không dùng
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-
-  // Sample data
-  const products: Product[] = [
-    {
-      id: 1,
-      code: "SP001",
-      name: "Sản phẩm A",
-      specificProduct: "OPPO Reno10 Pro Plus 5G chính là phiên bản điện thoại mới nhất trong dòng OPPO Reno và rất được mong đợi. Đây là chiếc điện thoại thông minh có hỗ trợ 5G với những thông số gây ấn tượng mạnh. Cụ thể, Reno10 Pro+ tạo được điểm chú ý đầu tiên từ ngay trong thiết kế của sản phẩm. Những tính năng tuyệt vời được trang bị trên chiếc điện thoại này bao gồm bộ xử lý mạnh mẽ, màn hình lớn sống động và hệ thống 3 camera với độ phân giải rất đáng để mong đợi.",
-      unit: "Cái",
-      price: 100000,
-      priceDate: "2025-06-01",
-      origin: "Việt Nam",
-      brand: "Thương hiệu A",
-      supplier: "Nhà cung cấp A",
-      asker: "Người hỏi A",
-      note: "Ghi chú A",
-    },
-    {
-      id: 2,
-      code: "SP002",
-      name: "Sản phẩm B",
-      specificProduct: "Chi tiết B",
-      unit: "Cái",
-      price: 150000,
-      priceDate: "2025-06-02",
-      origin: "Trung Quốc",
-      brand: "Thương hiệu B",
-      supplier: "Nhà cung cấp B",
-      asker: "Người hỏi B",
-      note: "Ghi chú B",
-    },
-  ];
-
-  const product = products.find((p) => p.id === parseInt(params.id));
-
-  if (!product) {
-    notFound();
-  }
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    code: product.code,
-    name: product.name || "",
-    specificProduct: product.specificProduct || "",
-    unit: product.unit || "",
-    price: product.price?.toString() || "",
-    priceDate: formatDate(product.priceDate),
-    origin: product.origin || "",
-    brand: product.brand || "",
-    supplier: product.supplier,
-    asker: product.asker,
-    note: product.note || "",
+    code: '',
+    name: '',
+    specificProduct: '',
+    unit: '',
+    price: '',
+    priceDate: '',
+    origin: '',
+    brand: '',
+    yrs_manu: '',
+    supplier: '',
+    asker: '',
+    note: '',
   });
 
+  useEffect(() => {
+    const loadProduct = async () => {
+      try {
+        const response = await fetchProductById(params.id);
+        if (response.success) {
+          setProduct(response.data);
+          setFormData({
+            code: response.data.code,
+            name: response.data.name || '',
+            specificProduct: response.data.specificProduct || '',
+            unit: response.data.unit || '',
+            price: response.data.price?.toString() || '',
+            priceDate: response.data.priceDate || '', // Giữ nguyên chuỗi từ API
+            origin: response.data.origin || '',
+            brand: response.data.brand || '',
+            yrs_manu: response.data.yrs_manu || '',
+            supplier: response.data.supplier,
+            asker: response.data.asker || '',
+            note: response.data.note || '',
+          });
+        } else {
+          throw new Error(response.message || 'Product not found');
+        }
+      } catch (err) {
+        setError((err as Error).message);
+        notFound();
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProduct();
+  }, [params.id]);
+
+  if (loading) return <Loading message="Đang tải..." size="medium" />;
+  if (error || !product) notFound();
+
   function formatDate(date?: string): string {
-    if (!date) return "";
+    if (!date) return '';
     try {
-      const parsedDate = parse(date, "yyyy-MM-dd", new Date());
+      const parsedDate = parse(date, 'dd-MM-yyyy', new Date());
       if (isValid(parsedDate)) {
-        return format(parsedDate, "dd/MM/yy");
+        return format(parsedDate, 'dd/MM/yy');
       }
       return date;
     } catch (e) {
-      console.error("Error formatting date:", e);
-      return "";
+      console.error('Error formatting date:', e);
+      return '';
     }
   }
 
   function formatPrice(price?: string): string {
-    if (!price) return "N/A";
+    if (!price) return 'N/A';
     const num = parseInt(price);
-    if (isNaN(num)) return "N/A";
-    return num.toLocaleString("vi-VN") + " VNĐ";
+    if (isNaN(num)) return 'N/A';
+    return num.toLocaleString('vi-VN') + ' VNĐ';
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
-  };
-
-  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setTempPriceDate(value ? format(parse(value, "yyyy-MM-dd", new Date()), "dd/MM/yy") : "");
-    setFormData((prev) => ({ ...prev, priceDate: value ? format(parse(value, "yyyy-MM-dd", new Date()), "dd/MM/yy") : "" }));
-    setErrors((prev) => ({ ...prev, priceDate: "" }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = (): boolean => {
     const newErrors: { [key: string]: string } = {};
-    if (!formData.code.trim()) newErrors.code = "Nhập mã";
-    if (!formData.supplier.trim()) newErrors.supplier = "Nhập NCC";
-    if (!formData.asker.trim()) newErrors.asker = "Nhập người hỏi";
-    if (formData.price && isNaN(parseInt(formData.price))) newErrors.price = "Số không hợp lệ";
-    if (formData.priceDate) {
-      try {
-        parse(formData.priceDate, "dd/MM/yy", new Date());
-      } catch {
-        newErrors.priceDate = "Ngày không hợp lệ";
-      }
+    if (!formData.code.trim()) newErrors.code = 'Nhập mã';
+    if (!formData.supplier.trim()) newErrors.supplier = 'Nhập NCC';
+    if (formData.price && isNaN(parseInt(formData.price))) newErrors.price = 'Số không hợp lệ';
+    if (formData.priceDate && !/^\d{2}-\d{2}-\d{4}$/.test(formData.priceDate)) {
+      newErrors.priceDate = 'Định dạng ngày không hợp lệ (dd-mm-yyyy)';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleEditToggle = () => {
+  const handleEditToggle = async () => {
     if (isEditing) {
       if (validateForm()) {
-        console.log("Lưu chỉnh sửa:", formData);
-        setIsEditing(false);
-        setTempPriceDate("");
+        try {
+          const updatedProduct = {
+            _id: product?._id,
+            name: formData.name,
+            code: formData.code,
+            specificProduct: formData.specificProduct,
+            origin: formData.origin,
+            brand: formData.brand,
+            yrs_manu: formData.yrs_manu,
+            price: parseInt(formData.price) || 0,
+            unit: formData.unit,
+            priceDate: formData.priceDate, // Giữ nguyên chuỗi
+            supplier: formData.supplier,
+            asker: formData.asker,
+            note: formData.note,
+          };
+
+          const response = await fetch(`http://localhost:4000/products/${params.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updatedProduct),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            alert(result.message);
+            router.push('/');
+            router.refresh();
+          } else {
+            throw new Error('Cập nhật thất bại');
+          }
+        } catch (err) {
+          setError((err as Error).message);
+        }
       }
     } else {
       setIsEditing(true);
-      setTempPriceDate(formData.priceDate);
     }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    setTempPriceDate("");
     setFormData({
       code: product.code,
-      name: product.name || "",
-      specificProduct: product.specificProduct || "",
-      unit: product.unit || "",
-      price: product.price?.toString() || "",
-      priceDate: formatDate(product.priceDate),
-      origin: product.origin || "",
-      brand: product.brand || "",
+      name: product.name || '',
+      specificProduct: product.specificProduct || '',
+      unit: product.unit || '',
+      price: product.price?.toString() || '',
+      priceDate: product.priceDate || '', // Giữ nguyên chuỗi
+      origin: product.origin || '',
+      brand: product.brand || '',
+      yrs_manu: product.yrs_manu || '',
       supplier: product.supplier,
-      asker: product.asker,
-      note: product.note || "",
+      asker: product.asker || '',
+      note: product.note || '',
     });
     setErrors({});
   };
 
   const handleDelete = async () => {
-    if (confirm(`Bạn có chắc muốn xóa sản phẩm "${formData.name || "N/A"}"?`)) {
-      console.log(`Xóa sản phẩm ID: ${product.id}`);
-      router.push("/");
+    if (confirm(`Bạn có chắc muốn xóa "${formData.name || 'sản phẩm này'}"?`)) {
+      try {
+        const response = await fetch(`http://192.168.1.27:4000/products/${params.id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          alert(result.message);
+          router.push('/');
+          router.refresh();
+        } else {
+          throw new Error('Xóa thất bại');
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      }
     }
   };
 
-  // New handler for Back button
   const handleBack = () => {
-    router.back(); // Navigate to the previous page
+    router.back();
   };
 
   return (
-    <div className="max-w-1xl space-y-1 p-4">
-      {/* Back Button */}
-      <div className="mb-4">
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
         <button
           onClick={handleBack}
-          className="flex items-center gap-1 bg-gray-500 text-white px-3 py-1.5 rounded text-xs hover:bg-gray-600 transition"
-          title="Quay lại"
+          className="flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
         >
-          <FaArrowLeft size={14} /> Quay lại
+          <FaArrowLeft className="h-4 w-4" /> Quay lại
         </button>
-      </div>
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-xl font-bold text-gray-900">Chi tiết sản phẩm</h1>
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           <button
-            className="p-2 text-blue-600 hover:text-blue-800 transition"
             onClick={handleEditToggle}
-            title={isEditing ? "Lưu" : "Chỉnh sửa"}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+              isEditing
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            {isEditing ? <FaSave size={16} /> : <FaEdit size={16} />}
+            {isEditing ? <FaSave className="h-4 w-4" /> : <FaEdit className="h-4 w-4" />}
+            {isEditing ? 'Lưu' : 'Chỉnh sửa'}
           </button>
           {isEditing && (
             <button
-              className="p-2 text-gray-600 hover:text-gray-800 transition"
               onClick={handleCancel}
-              title="Hủy"
+              className="flex items-center gap-2 bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors"
             >
-              <FaTimes size={16} />
+              <FaTimes className="h-4 w-4" /> Hủy
             </button>
           )}
           <button
-            className="p-2 text-red-600 hover:text-red-800 transition"
             onClick={handleDelete}
-            title="Xóa"
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
           >
-            <FaTrash size={16} />
+            <FaTrash className="h-4 w-4" /> Xóa
           </button>
         </div>
       </div>
-      <form ref={formRef} className="space-y-2">
-        <div className="text-sm font-semibold text-teal-600">Thông tin sản phẩm</div>
-        {renderInfoCard("Mã sản phẩm", "code", formData.code, isEditing, handleChange, errors.code)}
-        {renderInfoCard("Tên sản phẩm", "name", formData.name, isEditing, handleChange, errors.name)}
-        {renderInfoCard("Chi tiết sản phẩm", "specificProduct", formData.specificProduct, isEditing, handleChange, errors.specificProduct, true)}
-        {renderCombinedInfoCard(
-          "Đơn vị",
-          "unit",
-          formData.unit,
-          "Giá",
-          "price",
-          formData.price,
-          isEditing,
-          handleChange,
-          handleChange,
-          errors.unit,
-          errors.price,
-          false,
-          true
-        )}
-        {renderInfoCard("Ngày hỏi giá", "priceDate", formData.priceDate, isEditing, handleChange, errors.priceDate, false, false, true, handleDateChange)}
-        {renderCombinedInfoCard(
-          "Xuất xứ",
-          "origin",
-          formData.origin,
-          "Thương hiệu",
-          "brand",
-          formData.brand,
-          isEditing,
-          handleChange,
-          handleChange,
-          errors.origin,
-          errors.brand
-        )}
-        {renderInfoCard("Nhà cung cấp", "supplier", formData.supplier, isEditing, handleChange, errors.supplier)}
-        {renderInfoCard("Người hỏi giá", "asker", formData.asker, isEditing, handleChange, errors.asker)}
-        {renderInfoCard("Ghi chú", "note", formData.note, isEditing, handleChange, errors.note, true)}
-      </form>
+      <div className="bg-white shadow-lg rounded-lg p-6 space-y-6">
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Mã sản phẩm</label>
+            <input
+              type="text"
+              name="code"
+              value={formData.code}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.code && <p className="text-red-600 text-sm mt-1">{errors.code}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Tên sản phẩm</label>
+            <input
+              type="text"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Chi tiết sản phẩm</label>
+            {isEditing ? (
+              <textarea
+                name="specificProduct"
+                value={formData.specificProduct}
+                onChange={handleChange}
+                className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 h-32"
+              />
+            ) : (
+              <p className="mt-1 text-gray-600 whitespace-pre-wrap break-words">
+                {formData.specificProduct || 'N/A'}
+              </p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Đơn vị</label>
+            <input
+              type="text"
+              name="unit"
+              value={formData.unit}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Giá</label>
+            <input
+              type="number"
+              name="price"
+              value={formData.price}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.price && <p className="text-red-600 text-sm mt-1">{errors.price}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Ngày hỏi giá</label>
+            <input
+              type="text"
+              name="priceDate"
+              value={formData.priceDate} // Sử dụng trực tiếp chuỗi
+              onChange={handleChange} // Sử dụng handleChange
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.priceDate && <p className="text-red-600 text-sm mt-1">{errors.priceDate}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Xuất xứ</label>
+            <input
+              type="text"
+              name="origin"
+              value={formData.origin}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Thương hiệu</label>
+            <input
+              type="text"
+              name="brand"
+              value={formData.brand}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Năm sản xuất</label>
+            <input
+              type="text"
+              name="yrs_manu"
+              value={formData.yrs_manu}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nhà cung cấp</label>
+            <input
+              type="text"
+              name="supplier"
+              value={formData.supplier}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+            {errors.supplier && <p className="text-red-600 text-sm mt-1">{errors.supplier}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Người hỏi giá</label>
+            <input
+              type="text"
+              name="asker"
+              value={formData.asker}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-sm font-medium text-gray-700">Ghi chú</label>
+            <textarea
+              name="note"
+              value={formData.note}
+              onChange={handleChange}
+              disabled={!isEditing}
+              className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 h-24"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
-
-  function renderInfoCard(
-    label: string,
-    name: string,
-    value: string,
-    isEditing: boolean,
-    onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void,
-    error?: string,
-    isMultiline: boolean = false,
-    isPrice: boolean = false,
-    isDate: boolean = false,
-    onDateChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  ) {
-    const displayValue = isEditing ? value : value || "N/A";
-    const formattedValue = isEditing ? displayValue : isPrice ? formatPrice(value) : isDate ? formatDate(value) : displayValue;
-
-    return (
-      <div className="bg-white border rounded-lg shadow-sm p-2 flex items-start gap-2">
-        <FaEye className="text-teal-600 mt-0.5" size={16} />
-        <div className="flex-1">
-          {isEditing ? (
-            isDate ? (
-              <div className="mt-0.5">
-                <input
-                  type="date"
-                  name={name}
-                  value={tempPriceDate ? format(parse(tempPriceDate, "dd/MM/yy", new Date()), "yyyy-MM-dd") : ""}
-                  onChange={onDateChange}
-                  className={`w-full border rounded p-1.5 text-xs ${error ? "border-red-600" : "border-gray-300"}`}
-                  placeholder="DD/MM/YY"
-                />
-                {error && <p className="text-red-600 text-[11px] mt-0.5">{error}</p>}
-              </div>
-            ) : isMultiline ? (
-              <div className="mt-0.5">
-                <textarea
-                  name={name}
-                  value={value}
-                  onChange={onChange}
-                  className={`w-full border rounded p-1.5 text-xs ${error ? "border-red-600" : "border-gray-300"}`}
-                  rows={1}
-                  placeholder={label}
-                />
-                {error && <p className="text-red-600 text-[11px] mt-0.5">{error}</p>}
-              </div>
-            ) : (
-              <div className="mt-0.5">
-                <input
-                  type={isPrice ? "number" : "text"}
-                  name={name}
-                  value={value}
-                  onChange={onChange}
-                  className={`w-full border rounded p-1.5 text-xs ${error ? "border-red-600" : "border-gray-300"}`}
-                  placeholder={label}
-                />
-                {error && <p className="text-red-600 text-[11px] mt-0.5">{error}</p>}
-              </div>
-            )
-          ) : (
-            <div className="flex items-center gap-2 mt-0.5">
-              <label className="text-sm font-semibold text-gray-900 whitespace-nowrap">{label}:</label>
-              <span className={`text-xs text-gray-600 font-normal ${!value ? "text-red-400" : ""}`}>
-                {formattedValue}
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  function renderCombinedInfoCard(
-    label1: string,
-    name1: string,
-    value1: string,
-    label2: string,
-    name2: string,
-    value2: string,
-    isEditing: boolean,
-    onChange1: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void,
-    onChange2: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void,
-    error1?: string,
-    error2?: string,
-    isMultiline: boolean = false,
-    isPrice: boolean = false
-  ) {
-    const displayValue1 = isEditing ? value1 : value1 || "N/A";
-    const displayValue2 = isEditing ? value2 : value2 || "N/A";
-    const formattedValue2 = isEditing ? displayValue2 : isPrice ? formatPrice(value2) : displayValue2;
-
-    return (
-      <div className="bg-white border rounded-lg shadow-sm p-2 flex items-start gap-2">
-        <FaEye className="text-teal-600 mt-0.5" size={16} />
-        <div className="flex-1 grid grid-cols-2 gap-2">
-          <div>
-            {isEditing ? (
-              <>
-                <label className="text-sm font-semibold text-gray-900">{label1}</label>
-                <div className="mt-0.5">
-                  <input
-                    type="text"
-                    name={name1}
-                    value={value1}
-                    onChange={onChange1}
-                    className={`w-full border rounded p-1.5 text-xs ${error1 ? "border-red-600" : "border-gray-300"}`}
-                    placeholder={label1}
-                  />
-                  {error1 && <p className="text-red-600 text-[11px] mt-0.5">{error1}</p>}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 mt-0.5">
-                <label className="text-sm font-semibold text-gray-900 whitespace-nowrap">{label1}:</label>
-                <span className={`text-xs text-gray-600 font-normal ${!value1 ? "text-red-400" : ""}`}>{displayValue1}</span>
-              </div>
-            )}
-          </div>
-          <div>
-            {isEditing ? (
-              <>
-                <label className="text-sm font-semibold text-gray-900">{label2}</label>
-                <div className="mt-0.5">
-                  <input
-                    type={isPrice ? "number" : "text"}
-                    name={name2}
-                    value={value2}
-                    onChange={onChange2}
-                    className={`w-full border rounded p-1.5 text-xs ${error2 ? "border-red-600" : "border-gray-300"}`}
-                    placeholder={label2}
-                  />
-                  {error2 && <p className="text-red-600 text-[11px] mt-0.5">{error2}</p>}
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center gap-2 mt-0.5">
-                <label className="text-sm font-semibold text-gray-900 whitespace-nowrap">{label2}:</label>
-                <span className={`text-xs text-gray-600 font-normal ${!value2 ? "text-red-400" : ""}`}>{formattedValue2}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
 }

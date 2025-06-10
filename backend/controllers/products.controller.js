@@ -5,7 +5,7 @@ exports.createProduct = async (req, res, next) => {
   try {
     const {
       name, code, specificProduct, origin, brand, yrs_manu,
-      price, unit, priceDate, supplier, note
+      price, unit, priceDate, supplier,asker, note, 
     } = req.body;
 
     const newProduct = new Product({
@@ -19,6 +19,7 @@ exports.createProduct = async (req, res, next) => {
       unit,
       priceDate,
       supplier,
+      asker,
       note,
     });
 
@@ -107,6 +108,33 @@ exports.getAllProducts = async (req, res, next) => {
     return res.status(500).json({
       success: false,
       message: "Lỗi khi lấy danh sách sản phẩm",
+      error: err.message
+    });
+  }
+};
+
+
+
+exports.getProductById = async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy sản phẩm"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy thông tin sản phẩm thành công",
+      data: product
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi khi lấy sản phẩm",
       error: err.message
     });
   }

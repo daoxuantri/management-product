@@ -16,4 +16,7 @@ router.delete("/:id", productController.deleteProduct);
 router.get("/", productController.getAllProducts);
 
 
+//Lấy thông tin chi tiết sản phẩm
+router.get("/:id", productController.getProductById);
+
 module.exports = router;

@@ -45,6 +45,9 @@ const productSchema = new Schema({
         type: String,
         default: true
     },
+    asker :{
+        type: String
+    },
     note: {
         type: String, 
         trim : true
