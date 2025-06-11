@@ -1,7 +1,7 @@
 // /src/app/add-project/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react'; // Xóa useRef vì không sử dụng
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaPlus, FaArrowLeft } from 'react-icons/fa';
 import { createProject, fetchProjects } from '@/api/projectApi';
@@ -12,11 +12,11 @@ export default function AddProjectPage() {
   const [formData, setFormData] = useState<Partial<Project>>({
     name: '',
     code: '',
-    time: '', // Khởi tạo với chuỗi rỗng
+    time: '',
     supervisor: '',
     progress: 'Chưa hoàn thành',
     note: '',
-    list_product: [], // Đảm bảo khởi tạo mảng
+    list_product: [],
     total: 0,
   });
   const [products, setProducts] = useState<Product[]>([]);
@@ -88,19 +88,20 @@ export default function AddProjectPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.name || !formData.code || !formData.time || !formData.supervisor) {
+    if (!formData.name || !formData.code || !formData.time || !formData.supervisor || !formData.progress) {
       alert('Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
     }
 
     try {
-      const response = await createProject({
+      const submissionData: Project = {
         ...formData,
-        time: formData.time || '', // Đảm bảo time không undefined
-      } as Project); // Ép kiểu để gửi
+        time: formData.time || '', // Đảm bảo time luôn là string
+      } as Project;
+      const response = await createProject(submissionData);
       if (response.success) {
         alert('Thêm dự án thành công!');
-        router.push('/project-product');
+        router.push('/project');
       } else {
         throw new Error(response.message || 'Thêm dự án thất bại');
       }
@@ -110,77 +111,79 @@ export default function AddProjectPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
+    <div className="p-6 space-y-6 bg-gray-100 min-h-screen">
+      <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-md">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => router.push('/project-product')}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 text-sm"
+            onClick={() => router.push('/project')}
+            className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
           >
             <FaArrowLeft /> Quay lại
           </button>
-          <h1 className="text-2xl font-semibold text-gray-700">Thêm dự án mới</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Thêm dự án mới</h1>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Tên dự án *"
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.name || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-        />
-        <input
-          type="text"
-          placeholder="Mã dự án *"
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.code || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
-        />
-        <input
-          type="text"
-          placeholder="Thời gian thực hiện *"
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.time || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
-        />
-        <input
-          type="text"
-          placeholder="Người giám sát *"
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.supervisor || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, supervisor: e.target.value }))}
-        />
-        <select
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={formData.progress || 'Chưa hoàn thành'}
-          onChange={(e) => setFormData(prev => ({ ...prev, progress: e.target.value }))}
-        >
-          <option value="Chưa hoàn thành">Chưa hoàn thành</option>
-          <option value="Hoàn thành">Hoàn thành</option>
-          <option value="Tạm dừng">Tạm dừng</option>
-          <option value="Hủy">Hủy</option>
-        </select>
-        <textarea
-          placeholder="Ghi chú"
-          className="w-full max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
-          value={formData.note || ''}
-          onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
-        />
+      <div className="bg-white p-6 rounded-lg shadow-md space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <input
+            type="text"
+            placeholder="Tên dự án *"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.name || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          />
+          <input
+            type="text"
+            placeholder="Mã dự án *"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.code || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, code: e.target.value }))}
+          />
+          <input
+            type="text"
+            placeholder="Thời gian (dd/MM/yyyy) *"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.time || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, time: e.target.value }))}
+          />
+          <input
+            type="text"
+            placeholder="Người giám sát *"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.supervisor || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, supervisor: e.target.value }))}
+          />
+          <select
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.progress || 'Chưa hoàn thành'}
+            onChange={(e) => setFormData(prev => ({ ...prev, progress: e.target.value }))}
+          >
+            <option value="Chưa hoàn thành">Chưa hoàn thành</option>
+            <option value="Hoàn thành">Hoàn thành</option>
+            <option value="Tạm dừng">Tạm dừng</option>
+            <option value="Hủy">Hủy</option>
+          </select>
+          <textarea
+            placeholder="Ghi chú"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none col-span-2"
+            value={formData.note || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, note: e.target.value }))}
+          />
+        </div>
 
         <div className="border-t pt-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-2">Thêm sản phẩm</h3>
-          <div className="flex gap-2 mb-2">
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">Thêm sản phẩm</h3>
+          <div className="flex gap-4 mb-4">
             <input
               type="text"
               placeholder="Tìm tên hoặc mã sản phẩm..."
-              className="w-2/3 max-w-lg p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/2 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
             {suggestions.length > 0 && (
-              <div className="absolute z-10 bg-white border border-gray-300 rounded-lg mt-12 w-2/3 max-w-lg">
+              <div className="absolute z-10 bg-white border border-gray-300 rounded-lg mt-12 w-1/2">
                 {suggestions.map((prod) => (
                   <div
                     key={prod._id}
@@ -198,25 +201,25 @@ export default function AddProjectPage() {
             <input
               type="number"
               placeholder="Số lượng"
-              className="w-1/3 max-w-xs p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-1/4 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={quantity}
               min="1"
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
             />
             <button
               onClick={handleAddProduct}
-              className="bg-green-700 text-white p-3 rounded-lg hover:bg-green-800 transition duration-200"
+              className="w-1/4 bg-green-700 text-white p-3 rounded-lg hover:bg-green-800 transition"
             >
               <FaPlus />
             </button>
           </div>
-          <div className="max-h-48 overflow-y-auto border rounded-lg p-2">
+          <div className="max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50">
             {formData.list_product?.map((item) => (
-              <div key={item._id} className="flex justify-between items-center text-sm py-1">
+              <div key={item._id} className="flex justify-between items-center text-sm py-2 border-b">
                 <span>{item.product.name} (x{item.quantity}) - {item.total_product.toLocaleString()} VNĐ</span>
                 <button
-                  onClick={() => handleRemoveProduct(item._id)}
-                  className="text-red-500 hover:text-red-700 ml-2"
+                  onClick={() => item._id && handleRemoveProduct(item._id)}
+                  className="text-red-500 hover:text-red-700"
                 >
                   X
                 </button>
@@ -226,16 +229,16 @@ export default function AddProjectPage() {
         </div>
       </div>
 
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="flex justify-end gap-4">
         <button
-          onClick={() => router.push('/project-product')}
-          className="px-4 py-2 text-gray-700 hover:text-gray-900 border border-gray-300 rounded-lg transition duration-200"
+          onClick={() => router.push('/project')}
+          className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
         >
           Hủy
         </button>
         <button
           onClick={handleSubmit}
-          className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition duration-200"
+          className="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
         >
           Lưu
         </button>

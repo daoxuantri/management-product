@@ -10,15 +10,24 @@ export default function ProjectPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(false); // Giả lập tải dữ liệu
+    const loadData = async () => {
+      try {
+        // Thêm logic tải dữ liệu nếu cần
+        setLoading(false);
+      } catch (err) {
+        setError((err as Error).message);
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   if (loading) return <Loading message="Đang tải danh sách dự án..." size="large" className="bg-white" />;
-  if (error) return <div>Error: {error}</div>;
+  if (error) return <div className="text-red-500 text-center">Lỗi: {error}</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Quản lý dự án</h1>
+    <div className="p-6 bg-gray-100 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Quản lý dự án</h1>
       <ProjectList />
     </div>
   );

@@ -43,7 +43,7 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         isLoading: false,
-        projects: [...state.projects, { _id: (state.projects.length + 1).toString(), ...action.payload }],
+        projects: [...state.projects, action.payload],
       };
     case 'UPDATE_PROJECT':
       return {

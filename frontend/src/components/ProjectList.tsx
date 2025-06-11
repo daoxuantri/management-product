@@ -1,3 +1,4 @@
+// /src/components/ProjectList.tsx
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -6,7 +7,7 @@ import { ProjectProductContext } from '@/lib/projectProductContext';
 import ProjectCard from './ProjectCard';
 import AddProjectDialog from './AddProjectDialog';
 import { FaPlus } from 'react-icons/fa';
-import { fetchProjects } from '../api/projectApi';
+import { fetchProjects } from '@/api/projectApi';
 import { Project } from '@/models/Project';
 
 export default function ProjectList() {
@@ -31,15 +32,15 @@ export default function ProjectList() {
       <div className="flex justify-end">
         <button
           onClick={() => setIsAddDialogOpen(true)}
-          className="bg-blue-700 text-white p-3 rounded-full hover:bg-blue-800"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
         >
-          <FaPlus />
+          <FaPlus /> Thêm dự án
         </button>
       </div>
 
       {state.isLoading && (
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500"></div>
         </div>
       )}
 
@@ -49,21 +50,19 @@ export default function ProjectList() {
         <div className="text-gray-500 text-center">Không có dự án nào</div>
       )}
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
-          {state.projects
-            .filter((project) => project._id) // Lọc các project không có _id
-            .map((project) => (
-              <motion.div
-                key={project._id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              >
-                <ProjectCard project={project as Project & { _id: string }} />
-              </motion.div>
-            ))}
+          {state.projects.map((project) => (
+            <motion.div
+              key={project._id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <ProjectCard project={project} />
+            </motion.div>
+          ))}
         </AnimatePresence>
       </div>
 
