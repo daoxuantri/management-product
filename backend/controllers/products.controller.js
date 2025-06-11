@@ -1,4 +1,5 @@
 const Product = require("../models/products");
+const Project = require("../models/projects");
 
 // Thêm sản phẩm
 exports.createProduct = async (req, res, next) => {
@@ -42,6 +43,11 @@ exports.createProduct = async (req, res, next) => {
 // Cập nhật sản phẩm
 exports.updateProduct = async (req, res, next) => {
   try {
+    const oldProduct = await Product.findById(req.params.id);
+    if (!oldProduct) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy sản phẩm để cập nhật" });
+    }
+
     const updated = await Product.findByIdAndUpdate(
       req.params.id,
       { $set: req.body },
@@ -49,25 +55,33 @@ exports.updateProduct = async (req, res, next) => {
     );
 
     if (!updated) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy sản phẩm để cập nhật"
-      });
+      return res.status(404).json({ success: false, message: "Cập nhật sản phẩm thất bại" });
     }
 
-    return res.status(200).json({
-      success: true,
-      message: "Cập nhật sản phẩm thành công",
-      data: updated
-    });
+    // Nếu giá sản phẩm thay đổi, cập nhật tất cả các dự án liên quan
+    if (req.body.price && req.body.price !== oldProduct.price) {
+      const projects = await Project.find({ "list_product.product": req.params.id });
+
+      for (let project of projects) {
+        project.list_product.forEach(item => {
+          if (item.product.toString() === req.params.id) {
+            item.total_product = item.quantity * req.body.price;
+          }
+        });
+
+        // Cập nhật tổng giá trị của dự án
+        project.total = project.list_product.reduce((sum, item) => sum + item.total_product, 0);
+        await project.save();
+      }
+    }
+
+    return res.status(200).json({ success: true, message: "Cập nhật sản phẩm thành công", data: updated });
+
   } catch (err) {
-    return res.status(500).json({
-      success: false,
-      message: "Lỗi khi cập nhật sản phẩm",
-      error: err.message
-    });
+    return res.status(500).json({ success: false, message: "Lỗi khi cập nhật sản phẩm", error: err.message });
   }
 };
+
 
 // Xóa sản phẩm
 exports.deleteProduct = async (req, res, next) => {

@@ -2,16 +2,7 @@
 'use client';
 
 import { createContext, useReducer, useEffect, ReactNode } from 'react';
-
-interface Project {
-  id: number;
-  name: string;
-  projectCode: string;
-  startDate: string;
-  endDate: string;
-  supervisor: string;
-  status: string;
-}
+import { Project } from '@/models/Project';
 
 interface State {
   isLoading: boolean;
@@ -52,21 +43,21 @@ const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         isLoading: false,
-        projects: [...state.projects, { id: state.projects.length + 1, ...action.payload }],
+        projects: [...state.projects, { _id: (state.projects.length + 1).toString(), ...action.payload }],
       };
     case 'UPDATE_PROJECT':
       return {
         ...state,
         isLoading: false,
         projects: state.projects.map((project) =>
-          project.id === action.payload.id ? action.payload : project
+          project._id === action.payload._id ? action.payload : project
         ),
       };
     case 'DELETE_PROJECT':
       return {
         ...state,
         isLoading: false,
-        projects: state.projects.filter((project) => project.id !== action.payload.projectId),
+        projects: state.projects.filter((project) => project._id !== action.payload.projectId),
       };
     default:
       return state;
@@ -77,10 +68,8 @@ export function ProjectProductProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    // Giả lập API call để tải danh sách dự án
     dispatch({ type: 'LOAD_PROJECTS' });
     try {
-      // Thay bằng API call thực tế khi có
       setTimeout(() => {
         dispatch({ type: 'LOAD_PROJECTS_SUCCESS', payload: [] });
       }, 1000);

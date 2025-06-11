@@ -48,7 +48,7 @@ export default function EditProduct({ params }: Props) {
             specificProduct: response.data.specificProduct || '',
             unit: response.data.unit || '',
             price: response.data.price?.toString() || '',
-            priceDate: response.data.priceDate || '', // Use raw string from API
+            priceDate: response.data.priceDate || '', // Sử dụng chuỗi thô từ API, ví dụ: "10/6/2025"
             origin: response.data.origin || '',
             brand: response.data.brand || '',
             yrs_manu: response.data.yrs_manu || '',
@@ -83,10 +83,7 @@ export default function EditProduct({ params }: Props) {
     if (!formData.code.trim()) newErrors.code = 'Vui lòng nhập mã sản phẩm';
     if (!formData.supplier.trim()) newErrors.supplier = 'Vui lòng nhập nhà cung cấp';
     if (formData.price && isNaN(parseInt(formData.price))) newErrors.price = 'Giá phải là số hợp lệ';
-    if (!formData.priceDate) newErrors.priceDate = 'Vui lòng nhập ngày hỏi giá';
-    else if (!/^\d{4}-\d{2}-\d{2}$/.test(formData.priceDate)) {
-      newErrors.priceDate = 'Định dạng ngày không hợp lệ (yyyy-mm-dd)';
-    }
+    if (!formData.priceDate.trim()) newErrors.priceDate = 'Vui lòng nhập ngày hỏi giá';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -104,7 +101,7 @@ export default function EditProduct({ params }: Props) {
           yrs_manu: formData.yrs_manu,
           price: parseInt(formData.price) || 0,
           unit: formData.unit,
-          priceDate: formData.priceDate,
+          priceDate: formData.priceDate, // Giữ nguyên chuỗi "dd/M/yyyy"
           supplier: formData.supplier,
           asker: formData.asker,
           note: formData.note,
@@ -119,7 +116,7 @@ export default function EditProduct({ params }: Props) {
         if (response.ok) {
           const result = await response.json();
           alert(result.message);
-          router.push('/dashboard');
+          router.push('/');
           router.refresh();
         } else {
           throw new Error('Cập nhật thất bại');
@@ -137,7 +134,7 @@ export default function EditProduct({ params }: Props) {
       specificProduct: product.specificProduct || '',
       unit: product.unit || '',
       price: product.price?.toString() || '',
-      priceDate: product.priceDate || '',
+      priceDate: product.priceDate || '', // Khôi phục chuỗi "dd/M/yyyy"
       origin: product.origin || '',
       brand: product.brand || '',
       yrs_manu: product.yrs_manu || '',
@@ -146,7 +143,7 @@ export default function EditProduct({ params }: Props) {
       note: product.note || '',
     });
     setErrors({});
-    router.push('/dashboard');
+    router.push('/');
   };
 
   const handleDelete = async () => {
@@ -160,7 +157,7 @@ export default function EditProduct({ params }: Props) {
         if (response.ok) {
           const result = await response.json();
           alert(result.message);
-          router.push('/dashboard');
+          router.push('/');
           router.refresh();
         } else {
           throw new Error('Xóa thất bại');
@@ -267,10 +264,11 @@ export default function EditProduct({ params }: Props) {
           <div>
             <label className="block text-sm font-medium text-gray-700">Ngày hỏi giá *</label>
             <input
-              type="date"
+              type="text"
               name="priceDate"
               value={formData.priceDate}
               onChange={handleChange}
+              placeholder="dd/M/yyyy (ví dụ: 10/6/2025)"
               className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
               required
             />

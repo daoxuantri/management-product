@@ -1,55 +1,48 @@
 // /src/components/EditProjectDialog.tsx
 import { useState, useContext } from 'react';
 import { ProjectProductContext } from '@/lib/projectProductContext';
-
-interface Project {
-  id: number;
-  name: string;
-  projectCode: string;
-  startDate: string;
-  endDate: string;
-  supervisor: string;
-  status: string;
-}
+import { updateProject } from '@/api/projectApi';
 
 interface EditProjectDialogProps {
-  project: Project;
+  project: any;
   onClose: () => void;
 }
 
 export default function EditProjectDialog({ project, onClose }: EditProjectDialogProps) {
   const { dispatch } = useContext(ProjectProductContext);
-  const [formData, setFormData] = useState(project);
+  const [formData, setFormData] = useState({
+    name: project.name,
+    code: project.code,
+    startDate: project.startDate || '',
+    endDate: project.endDate || '',
+    supervisor: project.supervisor,
+    status: project.status,
+  });
+
   const statusOptions = ['Đang thực hiện', 'Hoàn thành', 'Tạm dừng', 'Hủy'];
 
-  const handleSubmit = () => {
-    if (
-      !formData.name ||
-      !formData.projectCode ||
-      !formData.startDate ||
-      !formData.endDate ||
-      !formData.supervisor ||
-      !formData.status
-    ) {
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.code || !formData.startDate || !formData.endDate || !formData.supervisor || !formData.status) {
       alert('Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
     try {
-      const startDate = new Date(formData.startDate).toISOString().split('T')[0];
-      const endDate = new Date(formData.endDate).toISOString().split('T')[0];
-
-      dispatch({
-        type: 'UPDATE_PROJECT',
-        payload: {
-          ...formData,
-          startDate,
-          endDate,
-        },
+      const response = await updateProject(project._id, {
+        name: formData.name,
+        code: formData.code,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        supervisor: formData.supervisor,
+        status: formData.status,
+        list_product: project.list_product,
+        total: project.total,
+        note: project.note,
       });
+      dispatch({ type: 'UPDATE_PROJECT', payload: response.data });
       onClose();
     } catch (e) {
-      alert('Định dạng ngày không hợp lệ (YYYY-MM-DD)');
+      alert('Lỗi khi cập nhật dự án');
     }
   };
 
@@ -69,17 +62,19 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
             type="text"
             placeholder="Mã dự án"
             className="w-full p-2 border rounded"
-            value={formData.projectCode}
-            onChange={(e) => setFormData({ ...formData, projectCode: e.target.value })}
+            value={formData.code}
+            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
           />
           <input
-            type="date"
+            type="text"
+            placeholder="Ngày bắt đầu (dd/M/yyyy)"
             className="w-full p-2 border rounded"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
           />
           <input
-            type="date"
+            type="text"
+            placeholder="Ngày kết thúc (dd/M/yyyy)"
             className="w-full p-2 border rounded"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
@@ -115,7 +110,7 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
             onClick={handleSubmit}
             className="bg-blue-700 text-white px-4 py-2 rounded hover:bg-blue-800"
           >
-            Cập nhật
+            Lưu
           </button>
         </div>
       </div>

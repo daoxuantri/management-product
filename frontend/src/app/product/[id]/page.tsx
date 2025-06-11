@@ -16,7 +16,6 @@ export default function ProductDetail({ params }: Props) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [tempPriceDate, setTempPriceDate] = useState(''); // Không cần nữa, có thể xóa nếu không dùng
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -49,7 +48,7 @@ export default function ProductDetail({ params }: Props) {
             specificProduct: response.data.specificProduct || '',
             unit: response.data.unit || '',
             price: response.data.price?.toString() || '',
-            priceDate: response.data.priceDate || '', // Giữ nguyên chuỗi từ API
+            priceDate: response.data.priceDate || '', // Giữ nguyên chuỗi từ API, ví dụ: "10/6/2025"
             origin: response.data.origin || '',
             brand: response.data.brand || '',
             yrs_manu: response.data.yrs_manu || '',
@@ -80,7 +79,7 @@ export default function ProductDetail({ params }: Props) {
       if (isValid(parsedDate)) {
         return format(parsedDate, 'dd/MM/yy');
       }
-      return date;
+      return date; // Giữ nguyên nếu không parse được, ví dụ: "10/6/2025"
     } catch (e) {
       console.error('Error formatting date:', e);
       return '';
@@ -105,9 +104,7 @@ export default function ProductDetail({ params }: Props) {
     if (!formData.code.trim()) newErrors.code = 'Nhập mã';
     if (!formData.supplier.trim()) newErrors.supplier = 'Nhập NCC';
     if (formData.price && isNaN(parseInt(formData.price))) newErrors.price = 'Số không hợp lệ';
-    if (formData.priceDate && !/^\d{2}-\d{2}-\d{4}$/.test(formData.priceDate)) {
-      newErrors.priceDate = 'Định dạng ngày không hợp lệ (dd-mm-yyyy)';
-    }
+    if (isEditing && !formData.priceDate.trim()) newErrors.priceDate = 'Nhập ngày hỏi giá'; // Chỉ kiểm tra khi chỉnh sửa
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -126,7 +123,7 @@ export default function ProductDetail({ params }: Props) {
             yrs_manu: formData.yrs_manu,
             price: parseInt(formData.price) || 0,
             unit: formData.unit,
-            priceDate: formData.priceDate, // Giữ nguyên chuỗi
+            priceDate: formData.priceDate, // Giữ nguyên chuỗi "dd/M/yyyy"
             supplier: formData.supplier,
             asker: formData.asker,
             note: formData.note,
@@ -163,7 +160,7 @@ export default function ProductDetail({ params }: Props) {
       specificProduct: product.specificProduct || '',
       unit: product.unit || '',
       price: product.price?.toString() || '',
-      priceDate: product.priceDate || '', // Giữ nguyên chuỗi
+      priceDate: product.priceDate || '', // Khôi phục chuỗi "dd/M/yyyy"
       origin: product.origin || '',
       brand: product.brand || '',
       yrs_manu: product.yrs_manu || '',
@@ -305,8 +302,9 @@ export default function ProductDetail({ params }: Props) {
             <input
               type="text"
               name="priceDate"
-              value={formData.priceDate} // Sử dụng trực tiếp chuỗi
-              onChange={handleChange} // Sử dụng handleChange
+              value={formData.priceDate} // Sử dụng trực tiếp chuỗi "dd/M/yyyy"
+              onChange={handleChange}
+              placeholder="dd/M/yyyy (ví dụ: 10/6/2025)"
               disabled={!isEditing}
               className="mt-1 w-full border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500"
             />

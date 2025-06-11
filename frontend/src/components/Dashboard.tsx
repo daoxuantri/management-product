@@ -1,78 +1,211 @@
-'use client'
-import Loading from '@/components/Loading'
-import { useState, useEffect, useMemo } from 'react'
-import { FaSearch, FaFileExport, FaFileImport, FaTrash, FaEdit, FaEye, FaPlus } from 'react-icons/fa'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { fetchProducts, deleteProduct } from '@/api/productApi'
-import { Product } from '@/models/Product'
+'use client';
+import Loading from '@/components/Loading';
+import { useState, useEffect, useMemo } from 'react';
+import { FaSearch, FaFileExport, FaFileImport, FaTrash, FaEdit, FaEye, FaPlus } from 'react-icons/fa';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { fetchProducts, deleteProduct, createProduct } from '@/api/productApi';
+import { Product } from '@/models/Product';
+import * as XLSX from 'xlsx';
 
 export default function Dashboard() {
-  const router = useRouter()
-  const [searchTerm, setSearchTerm] = useState('')
-  const [sortBy, setSortBy] = useState('default')
-  const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'code', 'priceDate', 'price', 'supplier', 'note'])
-  const [products, setProducts] = useState<Product[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('default');
+  const [selectedFields, setSelectedFields] = useState<string[]>(['name', 'code', 'specificProduct', 'origin', 'brand', 'priceDate', 'yrs_manu', 'price', 'unit', 'supplier', 'asker', 'note']);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const response = await fetchProducts()
-        if (response.success) setProducts(response.data)
-        else throw new Error(response.message)
+        const response = await fetchProducts();
+        if (response.success) setProducts(response.data);
+        else throw new Error(response.message);
       } catch (err) {
-        setError((err as Error).message)
+        setError((err as Error).message);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
-    loadProducts()
-  }, [])
+    };
+    loadProducts();
+  }, []);
 
   const filteredProducts = useMemo(() => {
-    let result = [...products]
+    let result = [...products];
     if (searchTerm) {
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           p.code.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      );
     }
     if (sortBy === 'priceDate') {
-      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      result.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
-    return result
-  }, [searchTerm, sortBy, products])
+    return result;
+  }, [searchTerm, sortBy, products]);
 
   const handleDelete = async (id: string) => {
-    const name = products.find(p => p._id === id)?.name || 'Sản phẩm'
+    const name = products.find((p) => p._id === id)?.name || 'Sản phẩm';
     if (confirm(`Xác nhận xóa "${name}"?`)) {
       try {
-        const response = await deleteProduct(id)
+        const response = await deleteProduct(id);
         if (response.success) {
-          alert(response.message)
-          setProducts(products.filter(p => p._id !== id))
+          alert(response.message);
+          setProducts(products.filter((p) => p._id !== id));
         } else {
-          throw new Error(response.message)
+          throw new Error(response.message);
         }
       } catch (err) {
-        setError((err as Error).message)
+        setError((err as Error).message);
       }
     }
-  }
+  };
 
   const handleExport = () => {
-    console.log('Export:', selectedFields)
-  }
+    const fieldMapping: { [key: string]: keyof Product } = {
+      'Tên danh mục hàng hóa': 'name',
+      'Ký mã hiệu': 'code',
+      'Thông tin chi tiết cấu hình': 'specificProduct',
+      'Xuất xứ': 'origin',
+      'Nhãn hiệu': 'brand',
+      'Ngày hỏi giá': 'priceDate',
+      'Năm sản xuất': 'yrs_manu',
+      'Giá tiền': 'price',
+      'Đơn vị tính': 'unit',
+      'Nhà cung cấp': 'supplier',
+      'Người hỏi giá': 'asker',
+      'Ghi chú': 'note',
+    };
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('Import:', e.target.files?.[0])
-  }
+    const exportData = filteredProducts.map((product) => {
+      const row: { [key: string]: any } = {};
+      for (const [excelField, modelField] of Object.entries(fieldMapping)) {
+        if (modelField === 'price') {
+          row[excelField] = product[modelField].toString(); // Chuyển số thành chuỗi
+        } else {
+          row[excelField] = product[modelField] || ''; // Giữ nguyên chuỗi, để trống nếu null/undefined
+        }
+      }
+      return row;
+    });
 
-  if (loading) return <Loading message="Đang tải dữ liệu..." className="bg-white" />
-  if (error) return <div className="text-red-500 text-sm">{error}</div>
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Products');
+    XLSX.writeFile(workbook, 'products_export.xlsx');
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet, { raw: true }) as any[];
+
+      const fieldMapping: { [key: string]: keyof Product } = {
+        'Tên danh mục hàng hóa': 'name',
+        'Ký mã hiệu': 'code',
+        'Thông tin chi tiết cấu hình': 'specificProduct',
+        'Xuất xứ': 'origin',
+        'Nhãn hiệu': 'brand',
+        'Ngày hỏi giá': 'priceDate',
+        'Năm sản xuất': 'yrs_manu',
+        'Giá tiền': 'price',
+        'Đơn vị tính': 'unit',
+        'Nhà cung cấp': 'supplier',
+        'Người hỏi giá': 'asker',
+        'Ghi chú': 'note',
+      };
+
+      const errors: string[] = [];
+      const newProducts: Product[] = [];
+
+      for (let i = 0; i < jsonData.length; i++) {
+        const row = jsonData[i];
+        const rawProduct: { [key: string]: any } = {};
+
+        // Map Excel columns to rawProduct fields as strings
+        for (const [excelField, modelField] of Object.entries(fieldMapping)) {
+          if (row[excelField] !== undefined) {
+            let value = row[excelField].toString();
+            // Nếu là số (serial date), chuyển thành định dạng "dd/M/yyyy"
+            if (modelField === 'priceDate' && !isNaN(parseFloat(value))) {
+              const date = new Date((parseFloat(value) - 25569) * 86400 * 1000); // Chuyển từ Excel serial date sang JS Date
+              if (!isNaN(date.getTime())) {
+                const day = date.getDate();
+                const month = date.getMonth() + 1;
+                const year = date.getFullYear();
+                value = `${day}/${month}/${year}`; // Định dạng "dd/M/yyyy" (không có số 0 dẫn trước)
+              }
+            }
+            rawProduct[modelField] = value;
+          }
+        }
+
+        // Basic validation
+        if (!rawProduct.name?.trim()) errors.push(`Dòng ${i + 2}: Thiếu tên sản phẩm`);
+        if (!rawProduct.code?.trim()) errors.push(`Dòng ${i + 2}: Thiếu mã sản phẩm`);
+        if (!rawProduct.supplier?.trim()) errors.push(`Dòng ${i + 2}: Thiếu nhà cung cấp`);
+        if (!rawProduct.priceDate?.trim()) errors.push(`Dòng ${i + 2}: Thiếu ngày hỏi giá`); // Chỉ kiểm tra không rỗng
+        if (rawProduct.price && isNaN(parseFloat(rawProduct.price))) {
+          errors.push(`Dòng ${i + 2}: Giá tiền không hợp lệ`);
+        }
+
+        if (errors.length === 0) {
+          try {
+            // Convert to Product type with explicit type casting
+            const apiProduct: Partial<Product> = {
+              name: rawProduct.name,
+              code: rawProduct.code,
+              specificProduct: rawProduct.specificProduct || '',
+              origin: rawProduct.origin || '',
+              brand: rawProduct.brand || '',
+              yrs_manu: rawProduct.yrs_manu || '',
+              price: rawProduct.price ? parseFloat(rawProduct.price) : 0,
+              unit: rawProduct.unit || '',
+              priceDate: rawProduct.priceDate, // Giữ định dạng "dd/M/yyyy" hoặc chuỗi tự do
+              supplier: rawProduct.supplier,
+              asker: rawProduct.asker || '',
+              note: rawProduct.note || '',
+            };
+            const response = await createProduct(apiProduct);
+            if (response.success && response.data) {
+              newProducts.push(response.data);
+            } else {
+              errors.push(`Dòng ${i + 2}: ${response.message}`);
+            }
+          } catch (err) {
+            errors.push(`Dòng ${i + 2}: ${(err as Error).message}`);
+          }
+        }
+      }
+
+      if (errors.length > 0) {
+        alert(`Có lỗi khi nhập dữ liệu:\n${errors.join('\n')}`);
+      } else {
+        alert('Nhập dữ liệu thành công!');
+      }
+
+      // Update the product list
+      if (newProducts.length > 0) {
+        setProducts((prev) => [...prev, ...newProducts]);
+      }
+    } catch (err) {
+      alert(`Lỗi khi xử lý file Excel: ${(err as Error).message}`);
+    } finally {
+      e.target.value = ''; // Reset file input
+    }
+  };
+
+  if (loading) return <Loading message="Đang tải dữ liệu..." className="bg-white" />;
+  if (error) return <div className="text-red-500 text-sm">{error}</div>;
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
@@ -122,9 +255,9 @@ export default function Dashboard() {
 
       {/* Chọn trường xuất */}
       <div>
-        <h3 className="font-medium text-sm mb-2">Trường xuất file:</h3>
+        <h3 className="font-medium text-sm mb-2">Trường hợp lệ:</h3>
         <div className="flex flex-wrap gap-3 text-sm">
-          {['name', 'code', 'priceDate', 'price', 'supplier', 'note'].map((field) => (
+          {['name', 'code', 'specificProduct', 'origin', 'brand', 'priceDate', 'yrs_manu', 'price', 'unit', 'supplier', 'asker', 'note'].map((field) => (
             <label key={field} className="flex items-center gap-1">
               <input
                 type="checkbox"
@@ -138,9 +271,15 @@ export default function Dashboard() {
               {{
                 name: 'Tên sản phẩm',
                 code: 'Mã sản phẩm',
+                specificProduct: 'Thông tin chi tiết cấu hình',
+                origin: 'Xuất xứ',
+                brand: 'Nhãn hiệu',
                 priceDate: 'Ngày hỏi giá',
+                yrs_manu: 'Năm sản xuất',
                 price: 'Giá',
+                unit: 'Đơn vị tính',
                 supplier: 'Nhà cung cấp',
+                asker: 'Người hỏi giá',
                 note: 'Ghi chú',
               }[field]}
             </label>
@@ -188,5 +327,5 @@ export default function Dashboard() {
         </table>
       </div>
     </div>
-  )
+  );
 }

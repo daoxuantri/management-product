@@ -1,6 +1,7 @@
 // /src/components/AddProjectDialog.tsx
 import { useState, useContext } from 'react';
 import { ProjectProductContext } from '@/lib/projectProductContext';
+import { createProject } from '@/api/projectApi';
 
 interface AddProjectDialogProps {
   onClose: () => void;
@@ -10,7 +11,7 @@ export default function AddProjectDialog({ onClose }: AddProjectDialogProps) {
   const { dispatch } = useContext(ProjectProductContext);
   const [formData, setFormData] = useState({
     name: '',
-    projectCode: '',
+    code: '',
     startDate: '',
     endDate: '',
     supervisor: '',
@@ -19,34 +20,28 @@ export default function AddProjectDialog({ onClose }: AddProjectDialogProps) {
 
   const statusOptions = ['Đang thực hiện', 'Hoàn thành', 'Tạm dừng', 'Hủy'];
 
-  const handleSubmit = () => {
-    if (
-      !formData.name ||
-      !formData.projectCode ||
-      !formData.startDate ||
-      !formData.endDate ||
-      !formData.supervisor ||
-      !formData.status
-    ) {
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.code || !formData.startDate || !formData.endDate || !formData.supervisor || !formData.status) {
       alert('Vui lòng nhập đầy đủ thông tin');
       return;
     }
 
     try {
-      const startDate = new Date(formData.startDate).toISOString().split('T')[0];
-      const endDate = new Date(formData.endDate).toISOString().split('T')[0];
-
-      dispatch({
-        type: 'ADD_PROJECT',
-        payload: {
-          ...formData,
-          startDate,
-          endDate,
-        },
+      const response = await createProject({
+        name: formData.name,
+        code: formData.code,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        supervisor: formData.supervisor,
+        status: formData.status,
+        list_product: [],
+        total: 0,
+        note: '',
       });
+      dispatch({ type: 'ADD_PROJECT', payload: response.data });
       onClose();
     } catch (e) {
-      alert('Định dạng ngày không hợp lệ (YYYY-MM-DD)');
+      alert('Lỗi khi thêm dự án');
     }
   };
 
@@ -66,17 +61,19 @@ export default function AddProjectDialog({ onClose }: AddProjectDialogProps) {
             type="text"
             placeholder="Mã dự án"
             className="w-full p-2 border rounded"
-            value={formData.projectCode}
-            onChange={(e) => setFormData({ ...formData, projectCode: e.target.value })}
+            value={formData.code}
+            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
           />
           <input
-            type="date"
+            type="text"
+            placeholder="Ngày bắt đầu (dd/M/yyyy)"
             className="w-full p-2 border rounded"
             value={formData.startDate}
             onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
           />
           <input
-            type="date"
+            type="text"
+            placeholder="Ngày kết thúc (dd/M/yyyy)"
             className="w-full p-2 border rounded"
             value={formData.endDate}
             onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}

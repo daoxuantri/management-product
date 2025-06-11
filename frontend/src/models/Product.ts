@@ -1,4 +1,4 @@
-// /models/Product.ts
+// /src/models/Product.ts
 export interface Product {
   _id: string;
   name: string;
@@ -9,11 +9,11 @@ export interface Product {
   yrs_manu: string;
   price: number;
   unit: string;
-  priceDate: string;
+  priceDate: string; // Có thể là ngày hoặc số (ví dụ: 45935)
   supplier: string;
-  asker : string, 
+  asker: string;
   note: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
   __v: number;
 }

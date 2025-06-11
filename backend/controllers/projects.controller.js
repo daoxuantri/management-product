@@ -1,4 +1,5 @@
 const Project = require("../models/projects");
+const Product = require("../models/products");
 
 // Thêm dự án
 exports.createProject = async (req, res, next) => {
@@ -14,6 +15,8 @@ exports.createProject = async (req, res, next) => {
 // Sửa dự án
 exports.updateProject = async (req, res, next) => {
   try {
+    console.log(req.body);
+
     const updated = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
     return res.status(200).json({ success: true, message: "Cập nhật dự án thành công", data: updated });
   } catch (err) {
@@ -32,18 +35,48 @@ exports.deleteProject = async (req, res, next) => {
 };
 
 // Thêm sản phẩm vào dự án
+
 exports.addProductToProject = async (req, res, next) => {
   try {
-    const { productId, quantity, total_product } = req.body;
+    const { productId, quantity } = req.body;
     const project = await Project.findById(req.params.id);
+    const product = await Product.findById(productId);
 
-    project.list_product.push({ product: productId, quantity, total_product });
+    if (!project || !product) {
+      return res.status(404).json({ success: false, message: "Dự án hoặc sản phẩm không tồn tại" });
+    }
+
+    // Nếu không truyền quantity, mặc định là 1
+    const productQuantity = quantity || 1;
+
+    // Kiểm tra xem sản phẩm đã có trong list_product chưa
+    const existingProduct = project.list_product.find(item => item.product.toString() === productId);
+
+    if (existingProduct) {
+      // Nếu sản phẩm đã tồn tại, cập nhật quantity và total_product
+      existingProduct.quantity += productQuantity;
+      existingProduct.total_product = existingProduct.quantity * product.price;
+    } else {
+      // Nếu sản phẩm chưa tồn tại, thêm mới
+      project.list_product.push({
+        product: productId,
+        quantity: productQuantity,
+        total_product: productQuantity * product.price
+      });
+    }
+
+    // Cập nhật tổng giá trị dự án
+    project.total = project.list_product.reduce((sum, item) => sum + item.total_product, 0);
+
     await project.save();
+
     return res.status(200).json({ success: true, message: "Thêm sản phẩm vào dự án thành công", data: project });
   } catch (err) {
     next(err);
   }
 };
+
+
 
 // Sửa sản phẩm trong dự án
 exports.updateProductInProject = async (req, res, next) => {
