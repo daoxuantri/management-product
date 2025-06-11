@@ -1,16 +1,16 @@
+// /src/app/project/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import ProjectList from '@/components/ProjectList';
 import Loading from '@/components/Loading';
 
-export default function ProjectProduct() {
+export default function ProjectPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Giả lập tải dữ liệu ban đầu
-    setLoading(false);
+    setLoading(false); // Giả lập tải dữ liệu
   }, []);
 
   if (loading) return <Loading message="Đang tải danh sách dự án..." size="large" className="bg-white" />;
