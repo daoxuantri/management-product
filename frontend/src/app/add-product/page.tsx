@@ -47,7 +47,7 @@ export default function AddProduct() {
     if (!validateForm()) return;
 
     try {
-      const response = await fetch('http://192.168.1.27:4000/products/create', {
+      const response = await fetch('http://192.168.1.12:4000/products/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

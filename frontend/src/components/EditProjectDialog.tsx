@@ -5,6 +5,7 @@ import { ProjectProductContext } from '@/lib/projectProductContext';
 import { updateProject, addProductToProject, deleteProductFromProject } from '@/api/projectApi';
 import { fetchProducts } from '@/api/productApi';
 import { Project, Product, ProjectProduct } from '@/models/Project';
+import { toast } from 'react-toastify';
 
 interface EditProjectDialogProps {
   project: Project;
@@ -82,13 +83,15 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
       setQuantity(1);
       setSuggestions([]);
       setError(null);
+      toast.success('Thêm sản phẩm thành công');
     } catch (e) {
       setError(`Lỗi khi thêm sản phẩm: ${(e as Error).message}`);
+      toast.error(`Lỗi khi thêm sản phẩm: ${(e as Error).message}`);
     }
   };
 
   // Xóa sản phẩm
-  const handleRemoveProduct = async (productItemId: string) => {
+  const handleRemoveProduct = async (productId: string) => {
     if (!project._id) {
       setError('Không tìm thấy ID dự án');
       return;
@@ -99,15 +102,17 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
     }
 
     try {
-      const response = await deleteProductFromProject(project._id, productItemId);
+      const response = await deleteProductFromProject(project._id, productId);
       setFormData((prev) => ({
         ...prev,
         list_product: response.data?.list_product || prev.list_product,
         total: response.data?.total || prev.total,
       }));
       setError(null);
+      toast.success('Xóa sản phẩm thành công');
     } catch (e) {
       setError(`Lỗi khi xóa sản phẩm: ${(e as Error).message}`);
+      toast.error(`Lỗi khi xóa sản phẩm: ${(e as Error).message}`);
     }
   };
 
@@ -121,6 +126,7 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
       !formData.progress
     ) {
       setError('Vui lòng nhập đầy đủ thông tin bắt buộc');
+      toast.error('Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
     }
 
@@ -141,9 +147,13 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
       };
       const response = await updateProject(project._id || '', submissionData);
       dispatch({ type: 'UPDATE_PROJECT', payload: response.data });
-      onClose();
+      toast.success('Cập nhật dự án thành công');
+      setTimeout(() => {
+        onClose();
+      }, 2000);
     } catch (e) {
       setError(`Lỗi khi cập nhật dự án: ${(e as Error).message}`);
+      toast.error(`Lỗi khi cập nhật dự án: ${(e as Error).message}`);
     }
   };
 
@@ -267,17 +277,18 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
             <div className="max-h-48 overflow-y-auto border rounded-lg p-2 bg-gray-50">
               {formData.list_product?.map((item) => {
                 const { name, code } = getProductInfo(item.product);
+                const productId = typeof item.product === 'string' ? item.product : item.product._id;
                 return (
                   <div
                     key={item._id}
-                    className="flex justify-between items-center textLancet-blue-500 text-sm py-2 border-b"
+                    className="flex justify-between items-center text-blue-500 text-sm py-2 border-b"
                   >
                     <span>
                       {name} ({code}) - x{item.quantity} -{' '}
                       {item.total_product.toLocaleString()} VNĐ
                     </span>
                     <button
-                      onClick={() => item._id && handleRemoveProduct(item._id)}
+                      onClick={() => productId && handleRemoveProduct(productId)}
                       className="text-red-500 hover:text-red-700"
                     >
                       X

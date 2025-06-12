@@ -1,4 +1,3 @@
-// /src/api/projectApi.ts
 import { Project } from '../models/Project';
 
 export const fetchProjects = async (): Promise<{
@@ -7,7 +6,7 @@ export const fetchProjects = async (): Promise<{
   data: Project[];
 }> => {
   try {
-    const response = await fetch('http://192.168.1.27:4000/projects');
+    const response = await fetch('http://192.168.1.12:4000/projects');
     if (!response.ok) throw new Error('Failed to fetch projects');
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'API error');
@@ -23,7 +22,7 @@ export const fetchProjectById = async (id: string): Promise<{
   data: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${id}`);
+    const response = await fetch(`http://192.168.1.12:4000/projects/${id}`);
     if (!response.ok) throw new Error('Failed to fetch project');
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'Project not found');
@@ -39,7 +38,7 @@ export const fetchProjectDetail = async (id: string): Promise<{
   data: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${id}`);
+    const response = await fetch(`http://192.168.1.12:4000/projects/${id}`);
     if (!response.ok) throw new Error('Failed to fetch project details');
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'Project details not found');
@@ -55,7 +54,7 @@ export const createProject = async (project: Partial<Project>): Promise<{
   data?: Project;
 }> => {
   try {
-    const response = await fetch('http://192.168.1.27:4000/projects/create', {
+    const response = await fetch('http://192.168.1.12:4000/projects/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
@@ -75,7 +74,7 @@ export const updateProject = async (id: string, project: Partial<Project>): Prom
   data?: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${id}`, {
+    const response = await fetch(`http://192.168.1.12:4000/projects/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
@@ -94,7 +93,7 @@ export const deleteProject = async (id: string): Promise<{
   message: string;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${id}`, {
+    const response = await fetch(`http://192.168.1.12:4000/projects/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -113,7 +112,7 @@ export const addProductToProject = async (projectId: string, productData: { prod
   data?: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${projectId}/add-product`, {
+    const response = await fetch(`http://192.168.1.12:4000/projects/${projectId}/add-product`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(productData),
@@ -133,7 +132,7 @@ export const updateProductInProject = async (projectId: string, productItemId: s
   data?: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${projectId}/update-product/${productItemId}`, {
+    const response = await fetch(`http://192.168.1.12:4000/projects/${projectId}/update-product/${productItemId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(productData),
@@ -147,13 +146,13 @@ export const updateProductInProject = async (projectId: string, productItemId: s
   }
 };
 
-export const deleteProductFromProject = async (projectId: string, productItemId: string): Promise<{
+export const deleteProductFromProject = async (projectId: string, productId: string): Promise<{
   success: boolean;
   message: string;
   data?: Project;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/projects/${projectId}/delete-product/${productItemId}`, {
+    const response = await fetch(`http://192.168.1.12:4000/projects/${projectId}/delete-product/${productId}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
     });

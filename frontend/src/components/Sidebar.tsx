@@ -45,15 +45,6 @@ export default function Sidebar() {
             </li>
             <li>
               <Link
-                href="/general"
-                className="flex items-center p-2 text-gray-200 hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <FaUsers className="h-5 w-5" />
-                {!isCollapsed && <span className="ml-3">Các mục khác</span>}
-              </Link>
-            </li>
-            <li>
-              <Link
                 href="/project-product"
                 className="flex items-center p-2 text-gray-200 hover:bg-gray-700 rounded-lg transition-colors"
               >
@@ -61,13 +52,13 @@ export default function Sidebar() {
                 {!isCollapsed && <span className="ml-3">Quản lý dự án</span>}
               </Link>
             </li>
-            <li>
+             <li>
               <Link
-                href="/other"
+                href="/general"
                 className="flex items-center p-2 text-gray-200 hover:bg-gray-700 rounded-lg transition-colors"
               >
-                <FaBox className="h-5 w-5" />
-                {!isCollapsed && <span className="ml-3">Đề xuất chỉnh sửa</span>}
+                <FaUsers className="h-5 w-5" />
+                {!isCollapsed && <span className="ml-3">Các mục khác</span>}
               </Link>
             </li>
           </ul>

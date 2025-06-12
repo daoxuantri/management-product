@@ -7,7 +7,7 @@ export const fetchProducts = async (): Promise<{
   data: Product[];
 }> => {
   try {
-    const response = await fetch('http://192.168.1.27:4000/products');
+    const response = await fetch('http://192.168.1.12:4000/products');
     if (!response.ok) throw new Error('Failed to fetch products');
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'API error');
@@ -23,7 +23,7 @@ export const fetchProductById = async (id: string): Promise<{
   data: Product;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/products/${id}`);
+    const response = await fetch(`http://192.168.1.12:4000/products/${id}`);
     if (!response.ok) throw new Error('Failed to fetch product');
     const data = await response.json();
     if (!data.success) throw new Error(data.message || 'Product not found');
@@ -39,7 +39,7 @@ export const createProduct = async (product: Partial<Product>): Promise<{
   data?: Product;
 }> => {
   try {
-    const response = await fetch('http://192.168.1.27:4000/products/create', {
+    const response = await fetch('http://192.168.1.12:4000/products/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product),
@@ -59,7 +59,7 @@ export const updateProduct = async (id: string, product: Partial<Product>): Prom
   data?: Product;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/products/${id}`, {
+    const response = await fetch(`http://192.168.1.12:4000/products/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(product),
@@ -78,7 +78,7 @@ export const deleteProduct = async (id: string): Promise<{
   message: string;
 }> => {
   try {
-    const response = await fetch(`http://192.168.1.27:4000/products/${id}`, {
+    const response = await fetch(`http://192.168.1.12:4000/products/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
     });

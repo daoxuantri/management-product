@@ -174,7 +174,7 @@ export default function ProductDetail({ params }: Props) {
   const handleDelete = async () => {
     if (confirm(`Bạn có chắc muốn xóa "${formData.name || 'sản phẩm này'}"?`)) {
       try {
-        const response = await fetch(`http://192.168.1.27:4000/products/${params.id}`, {
+        const response = await fetch(`http://192.168.1.12:4000/products/${params.id}`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
         });
