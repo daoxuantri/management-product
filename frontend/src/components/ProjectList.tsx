@@ -1,4 +1,3 @@
-// /src/components/ProjectList.tsx
 'use client';
 
 import { useState, useEffect, useContext } from 'react';
@@ -21,15 +20,19 @@ export default function ProjectList() {
         const response = await fetchProjects();
         dispatch({ type: 'LOAD_PROJECTS_SUCCESS', payload: response.data });
       } catch (err) {
-        dispatch({ type: 'LOAD_PROJECTS_ERROR', payload: (err as Error).message });
+        dispatch({
+          type: 'LOAD_PROJECTS_ERROR',
+          payload: (err as Error).message,
+        });
       }
     };
     loadProjects();
   }, [dispatch]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-end">
+    <div className="space-y-6 p-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-gray-800">Danh sách dự án</h2>
         <button
           onClick={() => setIsAddDialogOpen(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition"
@@ -44,10 +47,16 @@ export default function ProjectList() {
         </div>
       )}
 
-      {state.error && <div className="text-red-500 text-center">{state.error}</div>}
+      {state.error && (
+        <div className="text-red-500 text-center bg-red-100 p-3 rounded-lg">
+          {state.error}
+        </div>
+      )}
 
       {state.projects.length === 0 && !state.isLoading && !state.error && (
-        <div className="text-gray-500 text-center">Không có dự án nào</div>
+        <div className="text-gray-500 text-center bg-gray-100 p-3 rounded-lg">
+          Không có dự án nào
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -66,7 +75,9 @@ export default function ProjectList() {
         </AnimatePresence>
       </div>
 
-      {isAddDialogOpen && <AddProjectDialog onClose={() => setIsAddDialogOpen(false)} />}
+      {isAddDialogOpen && (
+        <AddProjectDialog onClose={() => setIsAddDialogOpen(false)} />
+      )}
     </div>
   );
 }

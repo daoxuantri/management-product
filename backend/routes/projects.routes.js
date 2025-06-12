@@ -20,9 +20,10 @@ router.put("/:id/update-product/:productItemId", projectController.updateProduct
 // Xóa sản phẩm khỏi dự án
 router.delete("/:id/delete-product/:productItemId", projectController.deleteProductFromProject);
 
-
-//Lấy toàn bộ dự án
+// Lấy toàn bộ dự án
 router.get("/", projectController.getAllProjects);
 
+// Lấy thông tin chi tiết dự án theo ID
+router.get("/:id", projectController.getProjectById);
 
 module.exports = router;

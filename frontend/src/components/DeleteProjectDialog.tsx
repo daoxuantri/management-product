@@ -1,4 +1,3 @@
-// /src/components/DeleteProjectDialog.tsx
 import { useContext } from 'react';
 import { ProjectProductContext } from '@/lib/projectProductContext';
 import { deleteProject } from '@/api/projectApi';
@@ -22,25 +21,27 @@ export default function DeleteProjectDialog({ project, onClose }: DeleteProjectD
       dispatch({ type: 'DELETE_PROJECT', payload: { projectId: project._id } });
       onClose();
     } catch (e) {
-      alert('Lỗi khi xóa dự án');
+      alert(`Lỗi khi xóa dự án: ${(e as Error).message}`);
     }
   };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg resize overflow-auto min-w-[300px] min-h-[200px] max-h-[90vh]">
         <h2 className="text-xl font-bold text-gray-800 mb-4">Xác nhận xóa dự án</h2>
-        <p className="text-gray-600">Bạn có chắc chắn muốn xóa dự án "<span className="font-medium">{project.name || 'N/A'}</span>"?</p>
-        <div className="flex justify-end gap-4 mt-6">
+        <p className="text-gray-600 mb-6">
+          Bạn có chắc chắn muốn xóa dự án "<span className="font-medium">{project.name || 'N/A'}</span>"?
+        </p>
+        <div className="flex justify-end gap-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition"
           >
             Hủy
           </button>
           <button
             onClick={handleDelete}
-            className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800"
+            className="px-4 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition"
           >
             Xóa
           </button>

@@ -35,7 +35,6 @@ exports.deleteProject = async (req, res, next) => {
 };
 
 // Thêm sản phẩm vào dự án
-
 exports.addProductToProject = async (req, res, next) => {
   try {
     const { productId, quantity } = req.body;
@@ -76,8 +75,6 @@ exports.addProductToProject = async (req, res, next) => {
   }
 };
 
-
-
 // Sửa sản phẩm trong dự án
 exports.updateProductInProject = async (req, res, next) => {
   try {
@@ -108,15 +105,14 @@ exports.deleteProductFromProject = async (req, res, next) => {
   }
 };
 
-
-//Lấy toàn bộ dự án
+// Lấy toàn bộ dự án
 exports.getAllProjects = async (req, res, next) => {
   try {
     const projects = await Project.find()
-      .populate("list_product.product") // lấy thông tin chi tiết sản phẩm
+      .populate("list_product.product")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Lấy danh sách dự án thành công",
       data: projects,
@@ -126,3 +122,22 @@ exports.getAllProjects = async (req, res, next) => {
   }
 };
 
+// Lấy thông tin chi tiết dự án theo ID
+exports.getProjectById = async (req, res, next) => {
+  try {
+    const project = await Project.findById(req.params.id)
+      .populate("list_product.product");
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Dự án không tồn tại" });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Lấy thông tin chi tiết dự án thành công",
+      data: project,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
