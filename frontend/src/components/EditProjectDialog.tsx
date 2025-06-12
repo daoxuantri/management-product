@@ -94,6 +94,10 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
       return;
     }
 
+    if (!window.confirm('Bạn có chắc muốn xóa sản phẩm này khỏi dự án?')) {
+      return;
+    }
+
     try {
       const response = await deleteProductFromProject(project._id, productItemId);
       setFormData((prev) => ({
@@ -266,7 +270,7 @@ export default function EditProjectDialog({ project, onClose }: EditProjectDialo
                 return (
                   <div
                     key={item._id}
-                    className="flex justify-between items-center text-sm py-2 border-b"
+                    className="flex justify-between items-center textLancet-blue-500 text-sm py-2 border-b"
                   >
                     <span>
                       {name} ({code}) - x{item.quantity} -{' '}

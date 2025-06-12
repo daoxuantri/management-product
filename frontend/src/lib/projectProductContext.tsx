@@ -1,8 +1,8 @@
-// /src/lib/projectProductContext.tsx
 'use client';
 
 import { createContext, useReducer, useEffect, ReactNode } from 'react';
 import { Project } from '@/models/Project';
+import { fetchProjects } from '@/api/projectApi';
 
 interface State {
   isLoading: boolean;
@@ -68,14 +68,16 @@ export function ProjectProductProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
-    dispatch({ type: 'LOAD_PROJECTS' });
-    try {
-      setTimeout(() => {
-        dispatch({ type: 'LOAD_PROJECTS_SUCCESS', payload: [] });
-      }, 1000);
-    } catch (e) {
-      dispatch({ type: 'LOAD_PROJECTS_ERROR', payload: 'Lỗi khi tải danh sách dự án' });
-    }
+    const loadProjects = async () => {
+      dispatch({ type: 'LOAD_PROJECTS' });
+      try {
+        const response = await fetchProjects();
+        dispatch({ type: 'LOAD_PROJECTS_SUCCESS', payload: response.data });
+      } catch (e) {
+        dispatch({ type: 'LOAD_PROJECTS_ERROR', payload: (e as Error).message });
+      }
+    };
+    loadProjects();
   }, []);
 
   return (

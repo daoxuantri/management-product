@@ -1,5 +1,6 @@
 const Project = require("../models/projects");
 const Product = require("../models/products");
+const mongoose = require("mongoose");
 
 // Thêm dự án
 exports.createProject = async (req, res, next) => {
@@ -16,7 +17,6 @@ exports.createProject = async (req, res, next) => {
 exports.updateProject = async (req, res, next) => {
   try {
     console.log(req.body);
-
     const updated = await Project.findByIdAndUpdate(req.params.id, req.body, { new: true });
     return res.status(200).json({ success: true, message: "Cập nhật dự án thành công", data: updated });
   } catch (err) {
@@ -45,18 +45,13 @@ exports.addProductToProject = async (req, res, next) => {
       return res.status(404).json({ success: false, message: "Dự án hoặc sản phẩm không tồn tại" });
     }
 
-    // Nếu không truyền quantity, mặc định là 1
     const productQuantity = quantity || 1;
-
-    // Kiểm tra xem sản phẩm đã có trong list_product chưa
     const existingProduct = project.list_product.find(item => item.product.toString() === productId);
 
     if (existingProduct) {
-      // Nếu sản phẩm đã tồn tại, cập nhật quantity và total_product
       existingProduct.quantity += productQuantity;
       existingProduct.total_product = existingProduct.quantity * product.price;
     } else {
-      // Nếu sản phẩm chưa tồn tại, thêm mới
       project.list_product.push({
         product: productId,
         quantity: productQuantity,
@@ -64,9 +59,7 @@ exports.addProductToProject = async (req, res, next) => {
       });
     }
 
-    // Cập nhật tổng giá trị dự án
     project.total = project.list_product.reduce((sum, item) => sum + item.total_product, 0);
-
     await project.save();
 
     return res.status(200).json({ success: true, message: "Thêm sản phẩm vào dự án thành công", data: project });
@@ -96,9 +89,34 @@ exports.updateProductInProject = async (req, res, next) => {
 // Xóa sản phẩm trong dự án
 exports.deleteProductFromProject = async (req, res, next) => {
   try {
+    // Kiểm tra ID hợp lệ
+    if (!mongoose.isValidObjectId(req.params.id) || !mongoose.isValidObjectId(req.params.productItemId)) {
+      return res.status(400).json({ success: false, message: "ID không hợp lệ" });
+    }
+
+    // Tìm dự án
     const project = await Project.findById(req.params.id);
-    project.list_product.id(req.params.productItemId).remove();
+    if (!project) {
+      return res.status(404).json({ success: false, message: "Dự án không tồn tại" });
+    }
+
+    // Tìm sản phẩm trong list_product dựa trên product._id
+    const productItemIndex = project.list_product.findIndex(
+      (item) => item.product.toString() === req.params.productItemId
+    );
+    if (productItemIndex === -1) {
+      return res.status(404).json({ success: false, message: "Sản phẩm không tồn tại trong dự án" });
+    }
+
+    // Xóa sản phẩm
+    project.list_product.splice(productItemIndex, 1);
+
+    // Cập nhật tổng giá tiền
+    project.total = project.list_product.reduce((sum, item) => sum + item.total_product, 0);
+
+    // Lưu dự án
     await project.save();
+
     return res.status(200).json({ success: true, message: "Xóa sản phẩm khỏi dự án thành công", data: project });
   } catch (err) {
     next(err);

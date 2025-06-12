@@ -33,6 +33,22 @@ export const fetchProjectById = async (id: string): Promise<{
   }
 };
 
+export const fetchProjectDetail = async (id: string): Promise<{
+  success: boolean;
+  message: string;
+  data: Project;
+}> => {
+  try {
+    const response = await fetch(`http://192.168.1.27:4000/projects/${id}`);
+    if (!response.ok) throw new Error('Failed to fetch project details');
+    const data = await response.json();
+    if (!data.success) throw new Error(data.message || 'Project details not found');
+    return data;
+  } catch (error) {
+    throw new Error((error as Error).message);
+  }
+};
+
 export const createProject = async (project: Partial<Project>): Promise<{
   success: boolean;
   message: string;

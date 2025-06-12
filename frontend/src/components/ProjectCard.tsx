@@ -79,14 +79,6 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           <span className="font-medium">Tổng giá:</span>
           <span>{project.total?.toLocaleString() || 0} VNĐ</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="font-medium">Sản phẩm:</span>
-          <span>
-            {project.list_product?.length
-              ? project.list_product.map((item) => item.product.name).join(', ')
-              : 'Không có'}
-          </span>
-        </div>
       </div>
       {isEditDialogOpen && (
         <EditProjectDialog
