@@ -1,4 +1,5 @@
 'use client';
+
 import Loading from '@/components/Loading';
 import { useState, useEffect, useMemo } from 'react';
 import { FaSearch, FaFileExport, FaFileImport, FaTrash, FaEdit, FaEye, FaPlus } from 'react-icons/fa';
@@ -7,6 +8,8 @@ import { useRouter } from 'next/navigation';
 import { fetchProducts, deleteProduct, createProduct } from '@/api/productApi';
 import { Product } from '@/models/Product';
 import * as XLSX from 'xlsx';
+import { Dialog, Transition } from '@headlessui/react';
+import { Fragment } from 'react';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -16,13 +19,27 @@ export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalMessage, setModalMessage] = useState('');
+
+  const showModal = (title: string, message: string) => {
+    setModalTitle(title);
+    setModalMessage(message);
+    setModalOpen(true);
+  };
 
   useEffect(() => {
     const loadProducts = async () => {
       try {
         const response = await fetchProducts();
-        if (response.success) setProducts(response.data);
-        else throw new Error(response.message);
+        if (response.success) {
+          console.log('Dữ liệu sản phẩm từ fetchProducts:', response.data);
+          setProducts(response.data);
+        } else {
+          throw new Error(response.message);
+        }
       } catch (err) {
         setError((err as Error).message);
       } finally {
@@ -53,13 +70,14 @@ export default function Dashboard() {
       try {
         const response = await deleteProduct(id);
         if (response.success) {
-          alert(response.message);
+          showModal('Thành công', response.message);
           setProducts(products.filter((p) => p._id !== id));
         } else {
           throw new Error(response.message);
         }
       } catch (err) {
         setError((err as Error).message);
+        showModal('Lỗi', (err as Error).message);
       }
     }
   };
@@ -84,9 +102,9 @@ export default function Dashboard() {
       const row: { [key: string]: any } = {};
       for (const [excelField, modelField] of Object.entries(fieldMapping)) {
         if (modelField === 'price') {
-          row[excelField] = product[modelField].toString(); // Chuyển số thành chuỗi
+          row[excelField] = product[modelField]?.toString() || '0';
         } else {
-          row[excelField] = product[modelField] || ''; // Giữ nguyên chuỗi, để trống nếu null/undefined
+          row[excelField] = product[modelField] || '';
         }
       }
       return row;
@@ -102,6 +120,7 @@ export default function Dashboard() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setImporting(true);
     try {
       const arrayBuffer = await file.arrayBuffer();
       const workbook = XLSX.read(arrayBuffer, { type: 'array' });
@@ -127,80 +146,89 @@ export default function Dashboard() {
       const errors: string[] = [];
       const newProducts: Product[] = [];
 
+      const parsePrice = (value: any): number | null => {
+        if (value === undefined || value === null || value === '') return null;
+        const cleanedValue = value.toString().replace(/[, VNĐ$€]/g, '').trim();
+        const parsed = parseFloat(cleanedValue);
+        console.log(`Parsing price: ${value} -> ${cleanedValue} -> ${parsed}`);
+        return isNaN(parsed) ? null : parsed;
+      };
+
       for (let i = 0; i < jsonData.length; i++) {
         const row = jsonData[i];
         const rawProduct: { [key: string]: any } = {};
 
-        // Map Excel columns to rawProduct fields as strings
         for (const [excelField, modelField] of Object.entries(fieldMapping)) {
           if (row[excelField] !== undefined) {
             let value = row[excelField].toString();
-            // Nếu là số (serial date), chuyển thành định dạng "dd/M/yyyy"
             if (modelField === 'priceDate' && !isNaN(parseFloat(value))) {
-              const date = new Date((parseFloat(value) - 25569) * 86400 * 1000); // Chuyển từ Excel serial date sang JS Date
+              const date = new Date((parseFloat(value) - 25569) * 86400 * 1000);
               if (!isNaN(date.getTime())) {
                 const day = date.getDate();
                 const month = date.getMonth() + 1;
                 const year = date.getFullYear();
-                value = `${day}/${month}/${year}`; // Định dạng "dd/M/yyyy" (không có số 0 dẫn trước)
+                value = `${day}/${month}/${year}`;
               }
             }
             rawProduct[modelField] = value;
           }
         }
 
-        // Basic validation
-        if (!rawProduct.name?.trim()) errors.push(`Dòng ${i + 2}: Thiếu tên sản phẩm`);
-        if (!rawProduct.code?.trim()) errors.push(`Dòng ${i + 2}: Thiếu mã sản phẩm`);
-        if (!rawProduct.supplier?.trim()) errors.push(`Dòng ${i + 2}: Thiếu nhà cung cấp`);
-        if (!rawProduct.priceDate?.trim()) errors.push(`Dòng ${i + 2}: Thiếu ngày hỏi giá`); // Chỉ kiểm tra không rỗng
-        if (rawProduct.price && isNaN(parseFloat(rawProduct.price))) {
-          errors.push(`Dòng ${i + 2}: Giá tiền không hợp lệ`);
+        const price = parsePrice(rawProduct.price);
+        if (rawProduct.price && price === null) {
+          errors.push(`Dòng ${i + 2}: Giá tiền không hợp lệ (${rawProduct.price})`);
+          continue;
         }
 
-        if (errors.length === 0) {
-          try {
-            // Convert to Product type with explicit type casting
-            const apiProduct: Partial<Product> = {
-              name: rawProduct.name,
-              code: rawProduct.code,
-              specificProduct: rawProduct.specificProduct || '',
-              origin: rawProduct.origin || '',
-              brand: rawProduct.brand || '',
-              yrs_manu: rawProduct.yrs_manu || '',
-              price: rawProduct.price ? parseFloat(rawProduct.price) : 0,
-              unit: rawProduct.unit || '',
-              priceDate: rawProduct.priceDate, // Giữ định dạng "dd/M/yyyy" hoặc chuỗi tự do
-              supplier: rawProduct.supplier,
-              asker: rawProduct.asker || '',
-              note: rawProduct.note || '',
-            };
-            const response = await createProduct(apiProduct);
-            if (response.success && response.data) {
-              newProducts.push(response.data);
-            } else {
-              errors.push(`Dòng ${i + 2}: ${response.message}`);
-            }
-          } catch (err) {
-            errors.push(`Dòng ${i + 2}: ${(err as Error).message}`);
+        console.log(`Dòng ${i + 2} rawProduct.price:`, rawProduct.price);
+        console.log(`Dòng ${i + 2} parsed price:`, price);
+        console.log(`Dòng ${i + 2} rawProduct:`, JSON.stringify(rawProduct, null, 2));
+
+        try {
+          const apiProduct: Partial<Product> = {
+            name: rawProduct.name || '',
+            code: rawProduct.code || '',
+            specificProduct: rawProduct.specificProduct || '',
+            origin: rawProduct.origin || '',
+            brand: rawProduct.brand || '',
+            yrs_manu: rawProduct.yrs_manu || '',
+            price: price ?? 0,
+            unit: rawProduct.unit || '',
+            priceDate: rawProduct.priceDate || '',
+            supplier: rawProduct.supplier || '',
+            asker: rawProduct.asker || '',
+            note: rawProduct.note || '',
+          };
+
+          console.log(`Gửi API cho dòng ${i + 2}:`, JSON.stringify(apiProduct, null, 2));
+
+          const response = await createProduct(apiProduct);
+          console.log(`Response API cho dòng ${i + 2}:`, JSON.stringify(response, null, 2));
+          if (response.success && response.data) {
+            newProducts.push(response.data);
+          } else {
+            errors.push(`Dòng ${i + 2}: ${response.message || 'Tạo sản phẩm thất bại'}`);
           }
+        } catch (err) {
+          errors.push(`Dòng ${i + 2}: ${(err as Error).message}`);
+          console.log(`Lỗi ngoại lệ cho dòng ${i + 2}:`, err);
         }
       }
 
       if (errors.length > 0) {
-        alert(`Có lỗi khi nhập dữ liệu:\n${errors.join('\n')}`);
+        showModal('Lỗi nhập dữ liệu', `Có lỗi khi nhập dữ liệu:\n${errors.join('\n')}`);
       } else {
-        alert('Nhập dữ liệu thành công!');
+        showModal('Thành công', 'Nhập dữ liệu thành công!');
       }
 
-      // Update the product list
       if (newProducts.length > 0) {
         setProducts((prev) => [...prev, ...newProducts]);
       }
     } catch (err) {
-      alert(`Lỗi khi xử lý file Excel: ${(err as Error).message}`);
+      showModal('Lỗi', `Lỗi khi xử lý file Excel: ${(err as Error).message}`);
     } finally {
-      e.target.value = ''; // Reset file input
+      setImporting(false);
+      e.target.value = '';
     }
   };
 
@@ -209,7 +237,7 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Tiêu đề + Thêm mới */}
+      {importing && <Loading message="Đang nhập dữ liệu..." className="bg-white" />}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold text-gray-700">Quản lý sản phẩm</h1>
         <Link href="/add-product" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
@@ -217,7 +245,6 @@ export default function Dashboard() {
         </Link>
       </div>
 
-      {/* Thanh tìm kiếm + Sort */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="relative w-full md:w-1/2">
           <FaSearch className="absolute left-3 top-3 text-gray-400" />
@@ -239,7 +266,6 @@ export default function Dashboard() {
         </select>
       </div>
 
-      {/* Import/Export */}
       <div className="flex flex-wrap gap-3">
         <label className="inline-flex items-center gap-2 bg-indigo-500 text-white px-4 py-2 rounded cursor-pointer text-sm hover:bg-indigo-600">
           <FaFileImport /> Import Excel
@@ -253,7 +279,6 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Chọn trường xuất */}
       <div>
         <h3 className="font-medium text-sm mb-2">Trường hợp lệ:</h3>
         <div className="flex flex-wrap gap-3 text-sm">
@@ -287,7 +312,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Bảng dữ liệu */}
       <div className="overflow-auto rounded shadow-sm border bg-white">
         <table className="min-w-full text-sm">
           <thead className="bg-gray-100 text-gray-700">
@@ -307,7 +331,9 @@ export default function Dashboard() {
                 <td className="px-4 py-2">{product.name}</td>
                 <td className="px-4 py-2">{product.code}</td>
                 <td className="px-4 py-2">{product.priceDate}</td>
-                <td className="px-4 py-2">{product.price.toLocaleString('vi-VN')} VNĐ</td>
+                <td className="px-4 py-2">
+                  {product.price != null ? product.price.toLocaleString('vi-VN') + ' VNĐ' : 'Chưa có giá'}
+                </td>
                 <td className="px-4 py-2">{product.supplier}</td>
                 <td className="px-4 py-2">{product.note}</td>
                 <td className="px-4 py-2 flex items-center gap-3 text-gray-600">
@@ -326,6 +352,56 @@ export default function Dashboard() {
           </tbody>
         </table>
       </div>
+
+      {/* Modal Dialog */}
+      <Transition appear show={modalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={() => setModalOpen(false)}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-25" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="h3" className="text-lg font-medium leading-6 text-gray-900">
+                    {modalTitle}
+                  </Dialog.Title>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500 whitespace-pre-wrap">{modalMessage}</p>
+                  </div>
+
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      onClick={() => setModalOpen(false)}
+                    >
+                      OK
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 }
