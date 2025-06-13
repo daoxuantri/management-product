@@ -15,6 +15,16 @@ export default function ProjectCard({ project }: ProjectCardProps) {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
+  const handleUpdate = (updatedProject: Project) => {
+    dispatch({ type: 'UPDATE_PROJECT', payload: updatedProject });
+    setIsEditDialogOpen(false);
+  };
+
+  const handleDelete = () => {
+    dispatch({ type: 'DELETE_PROJECT', payload: { projectId: project._id } });
+    setIsDeleteDialogOpen(false);
+  };
+
   const getProgressColor = (progress: string | undefined) => {
     const safeProgress = progress || '';
     switch (safeProgress.toLowerCase()) {
@@ -43,12 +53,14 @@ export default function ProjectCard({ project }: ProjectCardProps) {
           <button
             onClick={() => setIsEditDialogOpen(true)}
             className="bg-blue-700 text-white p-2 rounded-full hover:bg-blue-800 transition"
+            aria-label={`Chỉnh sửa dự án ${project.name || 'Không có tên'}`}
           >
             <FaEdit size={16} />
           </button>
           <button
             onClick={() => setIsDeleteDialogOpen(true)}
             className="bg-red-700 text-white p-2 rounded-full hover:bg-red-800 transition"
+            aria-label={`Xóa dự án ${project.name || 'Không có tên'}`}
           >
             <FaTrash size={16} />
           </button>
@@ -82,14 +94,18 @@ export default function ProjectCard({ project }: ProjectCardProps) {
       </div>
       {isEditDialogOpen && (
         <EditProjectDialog
-          project={project}
+          isOpen={isEditDialogOpen}
           onClose={() => setIsEditDialogOpen(false)}
+          project={project}
+          onUpdate={handleUpdate}
         />
       )}
       {isDeleteDialogOpen && (
         <DeleteProjectDialog
-          project={project}
+          isOpen={isDeleteDialogOpen}
           onClose={() => setIsDeleteDialogOpen(false)}
+          project={project}
+          onDelete={handleDelete}
         />
       )}
     </div>
